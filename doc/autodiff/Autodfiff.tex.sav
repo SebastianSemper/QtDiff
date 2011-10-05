@@ -1,0 +1,402 @@
+\documentclass[12pt]{article}
+\usepackage[ngerman]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage[dvips]{graphicx}
+\usepackage{dsfont}
+\usepackage{color}
+
+\setlength{\textwidth}{16cm}
+\setlength{\textheight}{22.5cm}
+\addtolength{\voffset}{-24mm}
+\setlength{\topmargin}{2.5cm}
+\setlength{\oddsidemargin}{0.1cm}
+\setlength{\evensidemargin}{0.1cm}
+\setlength{\parindent}{0mm}
+
+\begin{document}
+
+\title{Autodiff \\  TU Ilmenau}
+\author{Lukas Elbert (47100) \and Sebastian Semper (46382)}
+\date{Juli 2011}
+\maketitle
+\thispagestyle{empty}
+\newpage
+\thispagestyle{empty}
+\setcounter{tocdepth}{4}
+\tableofcontents
+
+
+\newpage
+\setcounter{page}{1}
+\section{Aufgabenstellung}
+Entwickeln Sie in C++ eine Klasse Autodiff, die mittels automatischer Differentiation die 1. Ableitung einer vorgegebenen Funktion berechnet.
+Implementieren Sie die Grundregeln der Differentiationsarithmetik und wenden Sie diese auf reelle und transzendente Funkionen an.
+Es sind zudem geeignete Konstruktoren und Destruktoren bereitzustellen.\\\\
+Überladen Sie die Operatoren +,-,*,/, den Zuweisungsoperator =, die Ein- und Ausgabeoperatoren sowie mathematische Standartfunktionen.
+Entwickeln Sie ein Demonstrationsprogramm mit einer einfachen Menüsteuerung, welches die Anwendung der Klassen Autodiff anhand selbsgewählter Beispiele zeigt. \\\\
+Legen Sie zudem kurz die theoretischen Sachverhalte Formeln usw. dar.\\
+Geben Sie einige Beispiele an und fügen sie den durchkommenteierten Quelltext des Programmes an.
+
+\newpage
+\section{Theoretische Grundlagen}
+\subsection{Differentiationsarithmetik}
+Als Differentiationsarithmetik ist eine Arithmetik geordneter Paare der Form
+$$U=(u,u') \text{ mit } u, u' \in \mathbb R$$
+beschrieben. Dabei beinhaltet die erste Komponente von U den Wert $u(x)$ der Funktion $u: \mathbb R \rightarrow \mathbb R$ am Punkt $x\in\mathbb R$. Die zweite Komponente beinhaltet den Wert der ersten Ableitung $u'(x)$ an der Stelle $x\in \mathbb R$. \\\\
+Für unsere Differentiationsarithmetik geordneter Paare gelten dabei die folgenden Grundregeln:\\
+(i) $U+V=(u, u')+(v, v')=(u+v, u'+v')$\\
+(ii) $U-V=(u, u')-(v, v')=(u-v, u'-v')$\\
+(iii) $U*V=(u, u')*(v, v')=(u*v, u'*v')$\\
+(iv) $U/V=(u, u')/(v, v')=(u/v, (u'-u*v'/v)/v)$\\\\
+Zudem gelten für die unabhängige Variable x und die beliebige Konstante c:\\
+(i) $X=(x,1)$ wegen $\frac{dx}{dx}=1$\\
+(ii) $C=(c,0)$ wegen $\frac{dc}{dx}=0$\\\\
+
+Mit den obigen sechs Regeln lässt sich nun unsere Differentiationsarithmetik auf reelle Funktionen anwenden. Dazu ersetzt man die unabhängige Variable $x\in \mathbb R$ in einem Ausdruck $f(x)$ durch $x=(x,1)$ und alle Konstanten $c\in\mathbb R$ durch $C=(c,0)$. Damit liefert uns die Berechnung von f mit den genannten Regeln der Differentiationsarithmetik das geordnete Paar
+$$Y=f(X)=f((x,1))=(f(x), f'(x)).$$
+Somit können wir also in unserem C++ Programm diese Regeln für unser automatisches Differentitationsprogramm anwenden.\\\\
+Da es die Aufgabenstellung fordert, dass unser Autodiff-Programm auch für transzendente Funktionen arbeitet, benötigen wir zudem natürlich noch die Kettenregel, die für geordnetete Paare wie folgt für die gegebene Variable $U=(u(x), u'(x))$ definiert ist:
+$$f(U(x))=f((u(x), u'(x)))=(f(u(x)), \frac{df}{du}\cdot u'(x))$$
+\newpage
+Für die transzendenten Funktionen sind die Ableitungen wie folgt definitert:\\
+\begin{itemize}
+\item $f(x)=\sin(g(x))$, $f'(x)=g'(x)\cos(g(x))$
+\item $h(x)=\cos(g(x))$, $h'(x)=g'(x)(-\sin(g(x))$
+\item $i(x)=\ln(g(x))$, $i'(x)=g'(x)\cdot \frac{1}{g(x)}$
+\item $j(x)=\exp(g(x))$, $j'(x)=g'(x) \cdot \exp(g(x))$
+\end{itemize}
+Hier ist schön zu sehen, dass wir die Kettenregel für die transzendenten Funktionen brauchen.\\\\
+Zusätzlich zu diesen Funktionen haben wir noch weitere in unserem Programm hinzugefügt, sie werdem über die eben beschrieben Funktionen definiert:
+\begin{itemize}
+\item$\tan(x)=\frac{\sin(x)}{\cos(x)}$
+\item$\cot(x)=\frac{\cos{x}}{\sin(x)}$
+\item$\sinh(x)=\frac{1}{2}\cdot (e^x-e^{-x})$
+\item$\cosh(x)=\frac{1}{2}\cdot (e^x+e^{-x})$
+\item$\tanh(x)=\frac{\sinh(x)}{\cosh(x)}$
+\item$\coth(x)=\frac{\cosh(x)}{\sinh(x)}$
+\end{itemize}
+Für sie sind keine weiteren besonderen Ableitungsregeln nötig, da sie über die anderen, klar bestimmten, transzendenten Funktionen definiert sind. Zum ableiten benutzt man die Produkt- und Quotientenregel (siehe Regeln weiter oben).\\\\
+
+
+
+
+\newpage
+\subsection{Zweite Ableitungen}
+Zur ersten Ableitung haben wir in unser Programm Autodiff zusätzlich die Möglichkeit hinzugefügt, sich die zweite Ableitung ausgeben zu lassen. Hierfür gibt es wiederum weitere Grundregeln, die es zu beachten gibt.\\\\
+Dabei betrachten wir das Tripel $U=(u, u', u'')$ mit $u, u', u''\in\mathbb R$. Hier beschreibt $u$ den Funktionswert, $u'$ den Wert der ersten Ableitung und $u''$ den Wert der zweiten Ableitung. \\\\
+Die Regeln für die zweite Ableitung sind also wie folgt\\\\
+(i)Konstante: $u(x)=c$, c-Kosntante, $U=(c,0,0)$\\
+(ii) Differnetiationsvariable x: $u(x)=x$ $U=(x,1,0)$\\
+(iii) Arithmetik: $W=U \circ V \text{ mit } \circ \in \{+,-,*,/\} \text{ für } W=(w,w',w''), U=(u,u',u''),\\ \hspace*{0.7cm} V=(v,v',v'')$\\
+$\hspace*{0.5 cm}$ (a) Regeln für $w$ und $w'$ sind oben bereits für die erste Ableitung definiert.\\
+$\hspace*{0.5 cm}$ (b) Regeln für $w''$:\\
+$\hspace*{1 cm}$ $W=U+V \Rightarrow w''=u''+v''$\\
+$\hspace*{1 cm}$ $W=U-V \Rightarrow w''=u''-v''$\\
+$\hspace*{1 cm}$ $W=U*V \Rightarrow w''=uv''+2u'v'+vu''$\\
+$\hspace*{1 cm}$ $W=U/V \Rightarrow w''=(u''-2w'v'-wv'')/v, v\neq 0$\\\\
+
+Für $U=(u, u', u'')$ liefert uns zudem die Kettenregel für $W=f(U)=f((u, u', u'')):$\\
+$\hspace*{1.5 cm} w=f(u)$\\
+$\hspace*{1.5 cm} w'=f'(u)\cdot u'$\\
+$\hspace*{1.5 cm} w''=f'(u)\cdot u''+f''(u)\cdot (u')^2$, d.h.$\vspace*{0.3cm}$\\
+$\hspace*{2cm} W=f(U)=(f(u), f'(u)\cdot u', f'(u)\cdot u''+f''(u)\cdot (u')^2).$\\
+Dabei sind $f'$ und $f''$ die gegebenen ersten und zweiten Ableitungen von f.\\\\
+Auch hier benutzen wir die transzendenten Funktionen, deren Ableitungen wie folgt definiert und benutzt werden:\\
+Für die transzendenten Funktionen sind die Ableitungen wie folgt definitert:\\
+\begin{itemize}
+\item $f(x)=\sin(g(x))$, $f''(x)=(g'(x))^2\cdot (-\sin(g(x)))+g''(x)\cdot\cos(g(x))$
+\item $h(x)=\cos(g(x))$, $h''(x)=(g'(x))^2\cdot (-\cos(g(x)))+g''(x)\cdot (-\sin(g(x)))$
+\item $i(x)=\ln(g(x))$, $i''(x)=(g'(x))^2\cdot(-\frac{1}{(g(x))^2})+g''(x)\cdot\frac{1}{g(x)}$
+\item $j(x)=\exp(g(x))$, $j''(x)=(g'(x))^2\cdot \exp(g(x))+g''(x)\exp(g(x))$
+\end{itemize}
+Unsere weiteren transzendenten Funktion sind wiederum (wie bei der ersten Ableitung), über diese Funktionen definiert.\\
+
+
+
+\newpage
+
+\section{Programmstruktur und Nutzungshinweise}\label{sect:mini}
+
+\newpage
+
+\section{Gui-Oberfläche}\label{sect:mini}
+Wir haben uns entschieden eine optisch ansprechendere Ausgabeoberfläche für unser Programm zu entwickeln, die unserer Meinung nach auch wesentlich benutzerfreundlicher ist. Dazu haben wir den QT-Designer benutzt, der uns eine Darstellung des Ausgabefensters zur Verfügung stellt und der uns die Möglichkeit gibt zwischen den einzelnen Funktionen unseres Programmes auszuwählen. Diese werden mittels Aktivierungsboxen ein- beziehungsweise ausgeschaltet. Dabei kann der Benutzer zunächst zwischen den beiden Differentiationsprogrammen Autodiff und Taylor auswählen. \\
+Nun kann man in dem Unterpunkt Autodiff zwischen drei verschiedenen Ausgaben wählen: Zum einen gibt es die Möglichkeit sich an einem bestimmten selbstwählbaren Punkt den Funktionswert, sowie die Werte der ersten und zweiten Ableitung ausgeben zulassen. Zudem gibt es den Unterpunkt Newton, bei dem man eine Newton-Iteration ausführen lassen kann und sich so über den Startwert s und die Genauigkeit d die Nullstelle annähern kann. Zuletzt haben wir die Auswahl einer Wertetabelle zur Verfügung gestellt, über die sich der Nutzer, in einem selbstgewählten Intervall mit bestimmbaren Schritten Werte ausgeben lassen kann.\\
+Im Unterpunkt Taylor kann man über die Auswahlboxen den Entwicklungspunkt und über den x-Wert, an welcher Stelle die Taylorfunktion berechnet werden soll. Man kann sich so die ersten Taylorkoeffizienten ausgeben lassen.\\
+Als Bonus haben wir noch eine Funktion "`Plot"' hinzugefügt. Über diese Checkbox hat man die Option sich sich die gewünscht Funktion in einem selbstgewählten Intervall plotten zu lassen. Dabei kann man sowohl das x- als auch das y-Achsen Intervall bestimmen. Zudem kann man die Genauigkeit des Plots bestimmen.\\
+Wenn der Nutzer seine gewünschte Funktion eingegeben hat, kann er sich das Ergebnis entweder über den Button "`Calculate"' oder die Eingabtetaste ausgeben lassen.\\
+Um das Ausgabefeld von den bereits ausgerechneten Ergebnissen zu bereinigen haben wir den Button "`Clear"' eingebaut.\\
+Unter dem "`Help"'-Button haben wir die Befehle beschrieben, die in unserem Programm zur Verfügung stehen. Hier bekommt man einen Überblick über die möglichen Funktionen und bekommt zugleich die einzugebenden Befehle beschrieben. Auch haben wir hier eine kleine Einleitung über unser Programm eingegeben.\\\\
+
+Die Gui-Oberfläche ist wie folgt in unseren Programmcode eingebaut.
+\newpage
+
+\section{Implementierung}
+
+\begin{verbatim}
+/*########
+autodiff.h
+########*/
+
+#ifndef AUTODIFF_H
+#define AUTODIFF_H
+#include <iostream>
+#include "math.h"
+#include "string.h"
+
+using namespace std;
+
+class autodiff{
+        friend autodiff pow(autodiff,autodiff);
+        friend autodiff exp(autodiff);
+        friend autodiff ln(autodiff);
+        friend autodiff sin(autodiff);
+        friend autodiff cos(autodiff);
+        friend autodiff tan(autodiff);
+        friend autodiff cot(autodiff);
+        friend autodiff cosh(autodiff);
+        friend autodiff sinh(autodiff);		
+        friend autodiff tanh(autodiff);
+        friend autodiff coth(autodiff);
+        friend autodiff operator *(autodiff, autodiff);
+        friend autodiff operator /(autodiff, autodiff);
+        friend autodiff operator +(autodiff, autodiff);
+        friend autodiff operator -(autodiff, autodiff);
+        friend autodiff operator -(autodiff);
+        friend autodiff operator *(double, autodiff);
+    private:	
+        //Das Zahlentripel fuer Funktionswert, Wert der Ableitung und Wert
+        der zweiten Ableitung	
+        double u;
+        double v;
+        double w;
+    public:	
+        //Schnittstellenfunktionen zur Eingabe
+        void set_u(double);
+        void set_v(double);
+        void set_w(double);
+
+        //Schnittstellenfunktionen zur Ausgabe
+        double get_u();
+        double get_v();
+        double get_w();
+	
+        //Methode zur einfachen Ausgabe	
+        string toStdString();
+
+        //Zuweisungsoperator
+        autodiff &operator =(const autodiff &s);
+
+        //Konstruktor
+        autodiff(double, double, double);
+
+        //Kopierkonstruktor
+        autodiff(const autodiff &a);
+
+        //Destruktor
+        ~autodiff();				
+};
+#endif //AUTODIFF_H
+\end{verbatim}
+\newpage
+\begin{verbatim}
+/*##########
+autodiff.cpp
+##########*/
+
+#include "autodiff.h"
+#include <sstream>
+using namespace std;
+
+/**#####################
+Schnittstellenfunktionen
+#####################**/
+double autodiff::get_u(){
+    return u;
+}
+double autodiff::get_v(){
+    return v;
+}
+double autodiff::get_w(){
+    return w;
+}
+void autodiff::set_u(double x){
+    u = x;
+}
+void autodiff::set_v(double x){
+    v = x;
+}
+void autodiff::set_w(double x){
+    w = x;
+}
+
+/**##############################################
+Umwandlung des Tripels in einen sinnvollen String
+##############################################**/
+string autodiff::toStdString(){
+    stringstream str;
+    str << "(" << u << "/" << v << "/" << w << ")";
+    return str.str();
+}
+
+
+/**########################################
+(Kopier-)Kon(De)struktor und Zuweisungsoperator
+########################################**/
+autodiff::autodiff(double x=0, double y=0, double z=0){
+    u = x;
+    v = y;
+    w = z;
+}
+autodiff::autodiff(const autodiff &a){
+    u = a.u;
+    v = a.v;
+    w = a.w;
+}
+autodiff &autodiff::operator =(const autodiff &a){
+    u = a.u;
+    v = a.v;
+    w = a.w;
+    return *this;
+}
+autodiff::~autodiff(){
+
+}
+
+/**########################################################
+Operator * wird mit einer skalaren Multiplikation überladen
+########################################################**/
+autodiff operator *(double k, autodiff a){
+    autodiff res(k*a.u, k*a.v, k*a.w);
+    return res;
+}
+
+/**#####################################
+Die Potenzierungsfunktion wird überladen
+#####################################**/
+autodiff pow(autodiff f, autodiff g){	
+	autodiff res(0,0,0);
+	if (f.u == 0) {
+		res.u = 0;
+		
+	}
+	res.u = pow(f.u,g.u);
+	res.v = exp(g.u * log(fabs(f.u)))*(g.v * log(fabs(f.u)) + g.u*(f.v/f.u));
+	res.w = exp(g.u * log(fabs(f.u))) * (pow((g.v * log(fabs(f.u)) +
+	            g.u*(f.v/f.u)),2) + g.w*log(fabs(f.u)) + 2*g.v*(f.v/f.u) +
+	            g.u*((f.w*f.u-f.v*f.v)/(f.u*f.u)));		
+	return res;
+	
+}
+
+/**###########################################
+Die transzendenten Funktionen werden überladen
+###########################################**/
+autodiff exp(autodiff x){ //Exponential-Funktion
+    autodiff res(exp(x.u),  exp(x.u) * x.v,  exp(x.u)  * (x.v * x.v + x.w));
+    return res;
+}
+autodiff sin(autodiff x){ //Sinus-Funktion
+    autodiff res(sin(x.u),  cos(x.u) * x.v,  x.w * cos(x.u) - sin(x.u) * x.v * x.v);
+    return res;	
+}
+autodiff cos(autodiff x){ //Cosinus-Funktion
+    autodiff res(cos(x.u),  -sin(x.u)*x.v,  -(cos(x.u)*x.v*x.v + x.w*sin(x.u)));
+    return res;
+}
+autodiff ln(autodiff x){ //Natürlicher Logarithmus
+    autodiff res(log(x.u), x.v/x.u, (x.w*x.u - x.v*x.v)/(x.u*x.u));
+    return res;
+}
+autodiff tan(autodiff x){ //Tangens definiert mit den bereits
+                          //überladenen Funktionen Sinus und Cosinus
+    autodiff res = sin(x)/cos(x);
+    return res;
+}
+autodiff cot(autodiff x){ //Kotangens definiert mit den bereits
+                          //überladenen Funktionen Sinus und Cosinus
+	autodiff res = cos(x)/sin(x);
+	return res;
+}
+
+/**###################################################################
+Hyperbolische Winkelfunktionen als Komposition der Exponentialfunktion
+###################################################################**/
+autodiff cosh(autodiff x){
+    autodiff res = 0.5*(exp(x) + exp(-x));
+    return res;
+}
+autodiff sinh(autodiff x){
+    autodiff res = 0.5*(exp(x) - exp(-x));
+    return res;
+}
+autodiff tanh(autodiff x){
+    autodiff res = sinh(x)/cosh(x);
+    return res;
+}
+autodiff coth(autodiff x){
+    autodiff res = cosh(x)/sinh(x);
+    return res;
+}
+
+/**#################################
+Standart-Operatoren werden überladen
+#################################**/
+autodiff operator + (autodiff a, autodiff b){
+    //Bei Addition können die Werte einfach addiert werden.
+    autodiff res(a.u + b.u,  a.v + b.v,  a.w + b.w);
+    return res;
+}
+autodiff operator - (autodiff a, autodiff b){
+    //Verwendung des bereits überladenen unären Operators (-)
+    autodiff res = a + (-b);
+    return res;
+}
+autodiff operator * (autodiff a, autodiff b){
+    //Zweifache Anwendung der Produktregel.
+    autodiff res(a.u * b.u,  a.u * b.v + a.v * b.u,
+                a.u * b.w + 2 * a.v * b.v + a.w*b.u);
+    return res;
+}
+autodiff operator / (autodiff a, autodiff b){
+    //Zweifache Anwendung der Quotientenregel mit Prüfung
+    //auf Nullstellen im Nenner.
+    if (fabs(b.u) < 0.00001){
+        autodiff res(0,0,0);
+        return res;
+    }
+    else{	
+        autodiff res(a.u / b.u,  (a.v*b.u-a.u*b.v)/(b.u*b.u),
+                    ((a.w*b.u-b.w*a.u)*b.u-
+                    ((a.v*b.u)-(b.v*a.u))*2*b.v)/(b.u*b.u*b.u));
+    	return res;
+    }	
+}
+
+/**############
+Unaerer Operator
+############**/
+autodiff operator - (autodiff a){	
+    autodiff res(-a.u, -a.v, -a.w);
+    return res;	
+}
+\end{verbatim}
+
+\newpage
+\setcounter{page}{20}
+\section{Beispiele}
+
+\newpage
+\setcounter{page}{41}
+\section{Literatur}
+\begin{itemize}
+\item Helmut Erlenkötter - C++ Objektorientiertes Programmieren von Anfang an
+\item Arnold Willemer - Einstieg in C++
+\item Jürgen Wolf - Qt 4.6 GUI-Entwicklung in C++
+\item Skript Wissenschaftliches Rechnen - Werner Vogt
+\end{itemize}
+\end{document}
